@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 1rem;
+
+    /* Background: warm cream */
+    --background: 0.975 0.012 60;
+    --foreground: 0.25 0.04 355;
+
+    /* Card: soft white with pink tint */
+    --card: 0.99 0.008 355;
+    --card-foreground: 0.25 0.04 355;
+
+    /* Popover */
+    --popover: 0.99 0.008 355;
+    --popover-foreground: 0.25 0.04 355;
+
+    /* Primary: rose pink */
+    --primary: 0.62 0.18 355;
+    --primary-foreground: 0.99 0.005 355;
+
+    /* Secondary: soft lavender */
+    --secondary: 0.92 0.04 295;
+    --secondary-foreground: 0.35 0.08 295;
+
+    /* Muted */
+    --muted: 0.95 0.02 60;
+    --muted-foreground: 0.55 0.04 355;
+
+    /* Accent: mint */
+    --accent: 0.92 0.05 170;
+    --accent-foreground: 0.28 0.07 170;
+
+    /* Destructive */
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    /* Border: soft pink */
+    --border: 0.9 0.04 355;
+    --input: 0.92 0.03 355;
+    --ring: 0.72 0.14 355;
+
+    /* Charts */
+    --chart-1: 0.72 0.18 355;
+    --chart-2: 0.72 0.1 295;
+    --chart-3: 0.72 0.1 170;
+    --chart-4: 0.82 0.12 60;
+    --chart-5: 0.72 0.15 45;
+
+    /* Sidebar */
+    --sidebar: 0.98 0.01 355;
+    --sidebar-foreground: 0.25 0.04 355;
+    --sidebar-primary: 0.62 0.18 355;
+    --sidebar-primary-foreground: 0.99 0.005 355;
+    --sidebar-accent: 0.94 0.04 295;
+    --sidebar-accent-foreground: 0.35 0.08 295;
+    --sidebar-border: 0.9 0.04 355;
+    --sidebar-ring: 0.72 0.14 355;
+
+    /* Custom kawaii tokens */
+    --pink: 0.72 0.18 355;
+    --pink-light: 0.92 0.08 355;
+    --pink-dark: 0.5 0.2 355;
+    --lavender: 0.75 0.12 295;
+    --lavender-light: 0.93 0.05 295;
+    --mint: 0.78 0.1 170;
+    --mint-light: 0.93 0.04 170;
+    --cream: 0.975 0.015 60;
+    --cream-dark: 0.93 0.03 60;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Figtree', 'Outfit', Georgia, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', 'Crimson Pro', Georgia, serif;
+  }
+
+  .bg-page {
+    background-color: oklch(var(--cream));
+    background-image: url('/assets/generated/bg-pattern.dim_800x800.jpg');
+    background-repeat: repeat;
+    background-size: 400px 400px;
+    position: relative;
+  }
+
+  .bg-page::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-color: oklch(var(--cream) / 0.88);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .kawaii-card {
+    background: oklch(var(--card));
+    border: 1px solid oklch(var(--pink-light));
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 24px oklch(var(--pink) / 0.12), 0 1px 4px oklch(var(--pink) / 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .kawaii-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px oklch(var(--pink) / 0.2), 0 4px 8px oklch(var(--pink) / 0.12);
+  }
+
+  .btn-pink {
+    background: linear-gradient(135deg, oklch(var(--pink)) 0%, oklch(var(--pink-dark)) 100%);
+    color: white;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-pink:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px oklch(var(--pink) / 0.4);
+  }
+
+  .btn-lavender {
+    background: linear-gradient(135deg, oklch(var(--lavender)) 0%, oklch(0.65 0.14 295) 100%);
+    color: white;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-lavender:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px oklch(var(--lavender) / 0.4);
+  }
+
+  .text-pink {
+    color: oklch(var(--pink));
+  }
+
+  .text-lavender {
+    color: oklch(var(--lavender));
+  }
+
+  .text-mint {
+    color: oklch(var(--mint));
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, oklch(var(--pink)) 0%, oklch(var(--lavender)) 50%, oklch(var(--mint)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .nav-glass {
+    background: oklch(var(--cream) / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid oklch(var(--pink-light) / 0.6);
+  }
+
+  .product-img {
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 0.875rem;
+  }
+
+  .badge-pink {
+    background: oklch(var(--pink-light));
+    color: oklch(var(--pink-dark));
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: oklch(var(--cream-dark));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(var(--pink-light));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(var(--pink));
+  }
+}
