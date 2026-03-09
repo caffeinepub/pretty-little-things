@@ -781,7 +781,7 @@ export function HomePage() {
       </section>
 
       {/* Features section */}
-      <section className="page-content pb-16 px-4">
+      <section className="page-content pb-10 px-4">
         <div className="max-w-4xl mx-auto">
           <motion.div
             className="grid grid-cols-1 sm:grid-cols-3 gap-6"
@@ -817,6 +817,19 @@ export function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Admin discreet link */}
+      <div className="pb-16 text-center">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/admin/login" })}
+          className="text-xs opacity-50 hover:opacity-80 transition-opacity"
+          style={{ color: "oklch(var(--pink))" }}
+          data-ocid="home.admin_login_link"
+        >
+          Admin Login ✿
+        </button>
+      </div>
     </PageLayout>
   );
 }

@@ -10,11 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Activity, LogOut, Package } from "lucide-react";
+import { Activity, Check, Loader2, LogOut, Package, Users } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
+import { useActor } from "../hooks/useActor";
 import { useGetAllLoginLogs, useGetAllOrders } from "../hooks/useQueries";
 
 function formatTimestamp(ts: bigint): string {
@@ -56,6 +59,9 @@ export function AdminPage() {
   const navigate = useNavigate();
   const { data: orders, isLoading: ordersLoading } = useGetAllOrders();
   const { data: loginLogs, isLoading: logsLoading } = useGetAllLoginLogs();
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const [deliveringIds, setDeliveringIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isAdminLoggedIn) {
@@ -67,6 +73,60 @@ export function AdminPage() {
     setAdminLoggedIn(false);
     navigate({ to: "/" });
   };
+
+  const handleMarkDelivered = async (orderId: bigint) => {
+    if (!actor) return;
+    const key = orderId.toString();
+    setDeliveringIds((prev) => new Set(prev).add(key));
+    try {
+      await actor.updateOrderStatus(orderId, "Delivered");
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("Order marked as delivered ✿");
+    } catch {
+      toast.error("Failed to update order status. Please try again.");
+    } finally {
+      setDeliveringIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
+  // Build per-user order summary
+  const userOrderSummary = useMemo(() => {
+    if (!orders) return [];
+    const map = new Map<
+      string,
+      {
+        name: string;
+        orderCount: number;
+        products: { name: string; qty: number }[];
+      }
+    >();
+    for (const order of orders) {
+      const key = order.customerName.toLowerCase().trim();
+      if (!map.has(key)) {
+        map.set(key, { name: order.customerName, orderCount: 0, products: [] });
+      }
+      const entry = map.get(key)!;
+      entry.orderCount += 1;
+      for (const item of order.items) {
+        const existing = entry.products.find(
+          (p) => p.name === item.productName,
+        );
+        if (existing) {
+          existing.qty += Number(item.quantity);
+        } else {
+          entry.products.push({
+            name: item.productName,
+            qty: Number(item.quantity),
+          });
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [orders]);
 
   if (!isAdminLoggedIn) return null;
 
@@ -145,14 +205,17 @@ export function AdminPage() {
 
           {/* Stats */}
           <motion.div
-            className="grid grid-cols-2 gap-4 mb-8"
+            className="grid grid-cols-3 gap-4 mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="kawaii-card p-5 flex items-center gap-4">
+            <div
+              className="kawaii-card p-5 flex items-center gap-4"
+              data-ocid="admin.orders_count_card"
+            >
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: "oklch(var(--pink-light))" }}
               >
                 <Package
@@ -175,9 +238,39 @@ export function AdminPage() {
                 </p>
               </div>
             </div>
+            <div
+              className="kawaii-card p-5 flex items-center gap-4"
+              data-ocid="admin.customers_count_card"
+            >
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: "oklch(var(--mint-light, var(--pink-light)))",
+                }}
+              >
+                <Users
+                  className="w-5 h-5"
+                  style={{ color: "oklch(var(--mint, var(--pink)))" }}
+                />
+              </div>
+              <div>
+                <p
+                  className="text-xs"
+                  style={{ color: "oklch(var(--muted-foreground))" }}
+                >
+                  Customers
+                </p>
+                <p
+                  className="text-2xl font-bold"
+                  style={{ color: "oklch(var(--mint, var(--pink)))" }}
+                >
+                  {ordersLoading ? "..." : userOrderSummary.length}
+                </p>
+              </div>
+            </div>
             <div className="kawaii-card p-5 flex items-center gap-4">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: "oklch(var(--lavender-light))" }}
               >
                 <Activity
@@ -221,6 +314,15 @@ export function AdminPage() {
                 >
                   <Package className="w-3.5 h-3.5 mr-1.5" />
                   Orders
+                </TabsTrigger>
+                <TabsTrigger
+                  value="customers"
+                  className="rounded-full text-sm font-semibold px-5"
+                  style={{ color: "oklch(var(--pink-dark))" }}
+                  data-ocid="admin.customers_tab"
+                >
+                  <Users className="w-3.5 h-3.5 mr-1.5" />
+                  Customers
                 </TabsTrigger>
                 <TabsTrigger
                   value="login-logs"
@@ -305,6 +407,12 @@ export function AdminPage() {
                             >
                               Date
                             </TableHead>
+                            <TableHead
+                              className="text-xs font-semibold"
+                              style={{ color: "oklch(var(--pink))" }}
+                            >
+                              Action
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -368,11 +476,11 @@ export function AdminPage() {
                                   className="text-[10px] rounded-full px-2"
                                   style={{
                                     background:
-                                      order.status === "delivered"
+                                      order.status.toLowerCase() === "delivered"
                                         ? "oklch(var(--mint-light))"
                                         : "oklch(var(--lavender-light))",
                                     color:
-                                      order.status === "delivered"
+                                      order.status.toLowerCase() === "delivered"
                                         ? "oklch(var(--mint))"
                                         : "oklch(0.45 0.1 295)",
                                     border: "none",
@@ -388,6 +496,165 @@ export function AdminPage() {
                                 }}
                               >
                                 {formatTimestamp(order.timestamp)}
+                              </TableCell>
+                              <TableCell>
+                                {order.status.toLowerCase() !== "delivered" && (
+                                  <Button
+                                    size="sm"
+                                    disabled={deliveringIds.has(
+                                      order.id.toString(),
+                                    )}
+                                    onClick={() =>
+                                      handleMarkDelivered(order.id)
+                                    }
+                                    className="rounded-full h-auto px-3 py-1.5 text-[11px] font-semibold gap-1.5 whitespace-nowrap"
+                                    style={{
+                                      background:
+                                        "linear-gradient(135deg, oklch(var(--pink)) 0%, oklch(var(--pink-dark)) 100%)",
+                                      color: "white",
+                                      border: "none",
+                                    }}
+                                    data-ocid={`admin.orders.deliver_button.${i + 1}`}
+                                  >
+                                    {deliveringIds.has(order.id.toString()) ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Check className="w-3 h-3" />
+                                    )}
+                                    Mark Delivered
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Customers Tab */}
+              <TabsContent value="customers">
+                <div
+                  className="kawaii-card overflow-hidden"
+                  data-ocid="admin.customers_table"
+                >
+                  {ordersLoading ? (
+                    <div className="p-6">
+                      <TableSkeleton rows={5} cols={3} />
+                    </div>
+                  ) : userOrderSummary.length === 0 ? (
+                    <div
+                      className="py-16 text-center"
+                      data-ocid="customers.empty_state"
+                    >
+                      <div className="text-4xl mb-4">👤</div>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "oklch(var(--muted-foreground))" }}
+                      >
+                        No customers yet ✿
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow
+                            style={{ borderColor: "oklch(var(--pink-light))" }}
+                          >
+                            <TableHead
+                              className="text-xs font-semibold"
+                              style={{ color: "oklch(var(--pink))" }}
+                            >
+                              #
+                            </TableHead>
+                            <TableHead
+                              className="text-xs font-semibold"
+                              style={{ color: "oklch(var(--pink))" }}
+                            >
+                              Customer
+                            </TableHead>
+                            <TableHead
+                              className="text-xs font-semibold"
+                              style={{ color: "oklch(var(--pink))" }}
+                            >
+                              No. of Orders
+                            </TableHead>
+                            <TableHead
+                              className="text-xs font-semibold"
+                              style={{ color: "oklch(var(--pink))" }}
+                            >
+                              Products Ordered
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {userOrderSummary.map((user, i) => (
+                            <TableRow
+                              key={user.name}
+                              className="hover:bg-kawaii-pink-light/20 transition-colors"
+                              style={{
+                                borderColor: "oklch(var(--pink-light) / 0.5)",
+                              }}
+                              data-ocid={`admin.customers.row.${i + 1}`}
+                            >
+                              <TableCell
+                                className="text-xs"
+                                style={{
+                                  color: "oklch(var(--muted-foreground))",
+                                }}
+                              >
+                                {i + 1}
+                              </TableCell>
+                              <TableCell
+                                className="font-medium text-sm"
+                                style={{ color: "oklch(var(--foreground))" }}
+                              >
+                                {user.name}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className="text-xs rounded-full px-3 font-bold"
+                                  style={{
+                                    background: "oklch(var(--pink-light))",
+                                    color: "oklch(var(--pink-dark))",
+                                    border: "none",
+                                  }}
+                                >
+                                  {user.orderCount}{" "}
+                                  {user.orderCount === 1 ? "order" : "orders"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell
+                                className="text-xs"
+                                style={{
+                                  color: "oklch(var(--muted-foreground))",
+                                }}
+                              >
+                                <div className="space-y-1">
+                                  {user.products.map((p) => (
+                                    <div
+                                      key={p.name}
+                                      className="flex items-center gap-1.5"
+                                    >
+                                      <span
+                                        className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                        style={{
+                                          background: "oklch(var(--pink))",
+                                        }}
+                                      />
+                                      <span>{p.name}</span>
+                                      <span
+                                        className="font-semibold"
+                                        style={{ color: "oklch(var(--pink))" }}
+                                      >
+                                        ×{p.qty}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}

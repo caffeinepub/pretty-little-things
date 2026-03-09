@@ -11,6 +11,8 @@ function getImageUrl(imageUrl: string): string {
   return `/assets/generated/${imageUrl}.dim_400x400.jpg`;
 }
 
+const DELIVERY_CHARGE = 20;
+
 export function CartPage() {
   const { items, removeItem, updateQuantity, totalAmount } = useCart();
   const navigate = useNavigate();
@@ -225,21 +227,54 @@ export function CartPage() {
                 </div>
 
                 <div
-                  className="border-t pt-4 flex justify-between items-center"
+                  className="border-t pt-4 space-y-2"
                   style={{ borderColor: "oklch(var(--pink-light))" }}
                 >
-                  <span
-                    className="font-bold text-base"
-                    style={{ color: "oklch(var(--foreground))" }}
+                  <div className="flex justify-between items-center">
+                    <span
+                      className="text-sm"
+                      style={{ color: "oklch(var(--muted-foreground))" }}
+                    >
+                      Subtotal
+                    </span>
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: "oklch(var(--foreground))" }}
+                    >
+                      ₹{totalAmount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span
+                      className="text-sm"
+                      style={{ color: "oklch(var(--muted-foreground))" }}
+                    >
+                      🚚 Delivery Charge
+                    </span>
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: "oklch(var(--muted-foreground))" }}
+                    >
+                      ₹{DELIVERY_CHARGE}
+                    </span>
+                  </div>
+                  <div
+                    className="flex justify-between items-center border-t pt-2"
+                    style={{ borderColor: "oklch(var(--pink-light))" }}
                   >
-                    Total
-                  </span>
-                  <span
-                    className="font-bold text-xl"
-                    style={{ color: "oklch(var(--pink))" }}
-                  >
-                    ₹{totalAmount}
-                  </span>
+                    <span
+                      className="font-bold text-base"
+                      style={{ color: "oklch(var(--foreground))" }}
+                    >
+                      Grand Total
+                    </span>
+                    <span
+                      className="font-bold text-xl"
+                      style={{ color: "oklch(var(--pink))" }}
+                    >
+                      ₹{totalAmount + DELIVERY_CHARGE}
+                    </span>
+                  </div>
                 </div>
 
                 <div
@@ -249,7 +284,8 @@ export function CartPage() {
                     color: "oklch(var(--pink-dark))",
                   }}
                 >
-                  🚚 Cash on Delivery · Delivery within Salem, Tamil Nadu
+                  🚚 Cash on Delivery · Delivery within Salem, Tamil Nadu · ₹20
+                  delivery charge
                 </div>
 
                 <Button

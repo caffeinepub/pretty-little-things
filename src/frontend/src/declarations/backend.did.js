@@ -55,7 +55,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'adminLogin' : IDL.Func(
-      [IDL.Text],
+      [IDL.Text, IDL.Text],
       [IDL.Record({ 'message' : IDL.Text, 'success' : IDL.Bool })],
       [],
     ),
@@ -94,6 +94,11 @@ export const idlService = IDL.Service({
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'seedProducts' : IDL.Func([], [], []),
+  'updateOrderStatus' : IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [IDL.Record({ 'message' : IDL.Text, 'success' : IDL.Bool })],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -143,7 +148,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'adminLogin' : IDL.Func(
-        [IDL.Text],
+        [IDL.Text, IDL.Text],
         [IDL.Record({ 'message' : IDL.Text, 'success' : IDL.Bool })],
         [],
       ),
@@ -182,6 +187,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'seedProducts' : IDL.Func([], [], []),
+    'updateOrderStatus' : IDL.Func(
+        [IDL.Nat, IDL.Text],
+        [IDL.Record({ 'message' : IDL.Text, 'success' : IDL.Bool })],
+        [],
+      ),
   });
 };
 

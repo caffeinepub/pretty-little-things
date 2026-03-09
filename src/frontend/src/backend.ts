@@ -130,7 +130,7 @@ export enum UserRole {
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addProduct(name: string, category: string, price: bigint, imageUrl: string, description: string): Promise<Product>;
-    adminLogin(password: string): Promise<{
+    adminLogin(username: string, password: string): Promise<{
         message: string;
         success: boolean;
     }>;
@@ -154,6 +154,10 @@ export interface backendInterface {
     }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     seedProducts(): Promise<void>;
+    updateOrderStatus(orderId: bigint, newStatus: string): Promise<{
+        message: string;
+        success: boolean;
+    }>;
 }
 import type { UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -186,20 +190,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async adminLogin(arg0: string): Promise<{
+    async adminLogin(arg0: string, arg1: string): Promise<{
         message: string;
         success: boolean;
     }> {
         if (this.processError) {
             try {
-                const result = await this.actor.adminLogin(arg0);
+                const result = await this.actor.adminLogin(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.adminLogin(arg0);
+            const result = await this.actor.adminLogin(arg0, arg1);
             return result;
         }
     }
@@ -389,6 +393,23 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.seedProducts();
+            return result;
+        }
+    }
+    async updateOrderStatus(arg0: bigint, arg1: string): Promise<{
+        message: string;
+        success: boolean;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateOrderStatus(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateOrderStatus(arg0, arg1);
             return result;
         }
     }

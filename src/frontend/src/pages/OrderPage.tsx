@@ -17,6 +17,8 @@ function getImageUrl(imageUrl: string): string {
   return `/assets/generated/${imageUrl}.dim_400x400.jpg`;
 }
 
+const DELIVERY_CHARGE = 20;
+
 export function OrderPage() {
   const { items, totalAmount, clearCart } = useCart();
   const { actor } = useActor();
@@ -26,6 +28,8 @@ export function OrderPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const grandTotal = totalAmount + DELIVERY_CHARGE;
 
   if (items.length === 0) {
     return (
@@ -185,21 +189,54 @@ export function OrderPage() {
               ))}
             </div>
             <div
-              className="border-t mt-4 pt-4 flex justify-between items-center"
+              className="border-t mt-4 pt-4 space-y-2"
               style={{ borderColor: "oklch(var(--pink-light))" }}
             >
-              <span
-                className="font-bold text-sm"
-                style={{ color: "oklch(var(--foreground))" }}
+              <div className="flex justify-between items-center">
+                <span
+                  className="text-sm"
+                  style={{ color: "oklch(var(--muted-foreground))" }}
+                >
+                  Subtotal
+                </span>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "oklch(var(--foreground))" }}
+                >
+                  ₹{totalAmount}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span
+                  className="text-sm"
+                  style={{ color: "oklch(var(--muted-foreground))" }}
+                >
+                  🚚 Delivery Charge
+                </span>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "oklch(var(--muted-foreground))" }}
+                >
+                  ₹{DELIVERY_CHARGE}
+                </span>
+              </div>
+              <div
+                className="flex justify-between items-center border-t pt-2"
+                style={{ borderColor: "oklch(var(--pink-light))" }}
               >
-                Total
-              </span>
-              <span
-                className="font-bold text-lg"
-                style={{ color: "oklch(var(--pink))" }}
-              >
-                ₹{totalAmount}
-              </span>
+                <span
+                  className="font-bold text-sm"
+                  style={{ color: "oklch(var(--foreground))" }}
+                >
+                  Grand Total
+                </span>
+                <span
+                  className="font-bold text-lg"
+                  style={{ color: "oklch(var(--pink))" }}
+                >
+                  ₹{grandTotal}
+                </span>
+              </div>
             </div>
           </motion.div>
 
@@ -227,6 +264,15 @@ export function OrderPage() {
               }}
             >
               💰 Payment: Cash on Delivery (COD)
+            </div>
+            <div
+              className="p-3 rounded-xl text-sm font-medium"
+              style={{
+                background: "oklch(var(--pink-light))",
+                color: "oklch(var(--pink-dark))",
+              }}
+            >
+              📦 Delivery charge: ₹20 (fixed for all orders)
             </div>
           </motion.div>
 

@@ -10,6 +10,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useActor } from "../hooks/useActor";
 
 export function AdminLoginPage() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { setAdminLoggedIn } = useAuth();
@@ -24,7 +25,7 @@ export function AdminLoginPage() {
     }
     setIsLoading(true);
     try {
-      const result = await actor.adminLogin(password);
+      const result = await actor.adminLogin(username, password);
       if (result.success) {
         setAdminLoggedIn(true);
         toast.success("Welcome, Admin! ✿");
@@ -80,6 +81,27 @@ export function AdminLoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label
+                htmlFor="admin-username"
+                className="text-sm font-medium"
+                style={{ color: "oklch(var(--foreground))" }}
+              >
+                Admin Username
+              </Label>
+              <Input
+                id="admin-username"
+                type="text"
+                placeholder="admin"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="rounded-xl border-2"
+                style={{ borderColor: "oklch(var(--pink-light))" }}
+                data-ocid="admin.username_input"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label
                 htmlFor="admin-password"

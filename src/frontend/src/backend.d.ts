@@ -47,7 +47,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     addProduct(name: string, category: string, price: bigint, imageUrl: string, description: string): Promise<Product>;
-    adminLogin(password: string): Promise<{
+    adminLogin(username: string, password: string): Promise<{
         message: string;
         success: boolean;
     }>;
@@ -71,4 +71,8 @@ export interface backendInterface {
     }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     seedProducts(): Promise<void>;
+    updateOrderStatus(orderId: bigint, newStatus: string): Promise<{
+        message: string;
+        success: boolean;
+    }>;
 }

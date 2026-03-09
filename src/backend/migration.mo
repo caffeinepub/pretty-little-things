@@ -1,6 +1,6 @@
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
-import Principal "mo:core/Principal";
+import Array "mo:core/Array";
 
 module {
   type Product = {
@@ -43,38 +43,19 @@ module {
     timestamp : Int;
   };
 
-  type UserProfile = {
-    name : Text;
-    email : Text;
-  };
-
-  type OldActor = {
+  type Actor = {
     products : Map.Map<Nat, Product>;
     orders : Map.Map<Nat, Order>;
     users : Map.Map<Nat, User>;
     usersByEmail : Map.Map<Text, User>;
     loginLogs : Map.Map<Nat, LoginLog>;
-    userProfiles : Map.Map<Principal, UserProfile>;
     nextProductId : Nat;
     nextOrderId : Nat;
     nextUserId : Nat;
     nextLoginLogId : Nat;
   };
 
-  type NewActor = {
-    products : Map.Map<Nat, Product>;
-    orders : Map.Map<Nat, Order>;
-    users : Map.Map<Nat, User>;
-    usersByEmail : Map.Map<Text, User>;
-    loginLogs : Map.Map<Nat, LoginLog>;
-    userProfiles : Map.Map<Principal, UserProfile>;
-    nextProductId : Nat;
-    nextOrderId : Nat;
-    nextUserId : Nat;
-    nextLoginLogId : Nat;
-  };
-
-  public func run(old : OldActor) : NewActor {
+  public func run(old : Actor) : Actor {
     old;
   };
 };

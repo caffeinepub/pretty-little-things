@@ -36,9 +36,9 @@ const CATEGORIES = [
 ];
 
 function getImageUrl(imageUrl: string): string {
-  if (!imageUrl) return "/assets/generated/earring-pearl-star.dim_400x400.jpg";
+  if (!imageUrl) return "/assets/generated/clip1.dim_400x400.jpg";
   if (imageUrl.startsWith("/assets/generated/")) return imageUrl;
-  return `/assets/generated/${imageUrl}.dim_400x400.jpg`;
+  return imageUrl;
 }
 
 function ProductCard({ product, index }: { product: Product; index: number }) {
@@ -218,6 +218,101 @@ const EMPTY_NEW_PRODUCT: NewProduct = {
 
 let localProductIdCounter = 10000;
 
+const STATIC_PRODUCTS: Product[] = [
+  // Korean Clips - ₹100 to ₹150
+  {
+    id: BigInt(1),
+    name: "Butterfly Bow Snap Clip",
+    category: "Korean Clips",
+    price: BigInt(100),
+    imageUrl: "/assets/generated/korean-clip-butterfly-bow.dim_400x400.jpg",
+    description: "Sweet pastel pink butterfly bow snap clip with rhinestones",
+  },
+  {
+    id: BigInt(2),
+    name: "Daisy Flower Alligator Clip",
+    category: "Korean Clips",
+    price: BigInt(120),
+    imageUrl: "/assets/generated/korean-clip-daisy-lavender.dim_400x400.jpg",
+    description: "Pretty lavender daisy alligator clip with tiny petals",
+  },
+  {
+    id: BigInt(3),
+    name: "Pearl Claw Clip",
+    category: "Korean Clips",
+    price: BigInt(150),
+    imageUrl: "/assets/generated/korean-clip-pearl-claw-mint.dim_400x400.jpg",
+    description: "Elegant mint green claw clip with pearl stud details",
+  },
+  // Korean Earrings - ₹100 to ₹150
+  {
+    id: BigInt(4),
+    name: "Gold Star Drop Earrings",
+    category: "Korean Earrings",
+    price: BigInt(100),
+    imageUrl: "/assets/generated/korean-earring-gold-star.dim_400x400.jpg",
+    description: "Dainty gold star drop earrings with sparkle detail",
+  },
+  {
+    id: BigInt(5),
+    name: "Pink Heart Stud Earrings",
+    category: "Korean Earrings",
+    price: BigInt(110),
+    imageUrl: "/assets/generated/korean-earring-pink-heart.dim_400x400.jpg",
+    description: "Adorable pastel pink heart stud earrings with glitter",
+  },
+  {
+    id: BigInt(6),
+    name: "Lavender Flower Drop Earrings",
+    category: "Korean Earrings",
+    price: BigInt(130),
+    imageUrl:
+      "/assets/generated/korean-earring-lavender-flower.dim_400x400.jpg",
+    description: "Delicate lavender flower drop earrings with crystal center",
+  },
+  {
+    id: BigInt(7),
+    name: "Mint Pearl Teardrop Earrings",
+    category: "Korean Earrings",
+    price: BigInt(150),
+    imageUrl: "/assets/generated/korean-earring-mint-pearl.dim_400x400.jpg",
+    description: "Dainty mint green pearl teardrop dangle earrings",
+  },
+  // Seamless Chains - ₹100 to ₹150
+  {
+    id: BigInt(8),
+    name: "Gold Heart Pendant Chain",
+    category: "Seamless Chains",
+    price: BigInt(100),
+    imageUrl: "/assets/generated/korean-chain-gold-heart.dim_400x400.jpg",
+    description: "Elegant thin gold chain with a delicate heart pendant",
+  },
+  {
+    id: BigInt(9),
+    name: "Silver Star Charm Chain",
+    category: "Seamless Chains",
+    price: BigInt(120),
+    imageUrl: "/assets/generated/korean-chain-silver-star.dim_400x400.jpg",
+    description: "Stylish thin silver chain with a tiny star charm",
+  },
+  {
+    id: BigInt(10),
+    name: "Layered Pearl Gold Chain",
+    category: "Seamless Chains",
+    price: BigInt(140),
+    imageUrl: "/assets/generated/korean-chain-layered-pearl.dim_400x400.jpg",
+    description: "Feminine double-layer chain with pearls and gold links",
+  },
+  {
+    id: BigInt(11),
+    name: "Pink Butterfly Charm Chain",
+    category: "Seamless Chains",
+    price: BigInt(150),
+    imageUrl: "/assets/generated/korean-chain-pink-butterfly.dim_400x400.jpg",
+    description: "Sweet pastel pink butterfly charm on a delicate chain",
+  },
+];
+
 export function ProductsPage() {
   const { data: products, isLoading, isError } = useGetAllProducts();
   const { isAdminLoggedIn, isOwner } = useAuth();
@@ -227,7 +322,12 @@ export function ProductsPage() {
   const [newProduct, setNewProduct] = useState<NewProduct>(EMPTY_NEW_PRODUCT);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const allProducts = [...(products ?? []), ...localProducts];
+  // Merge backend products with static products (avoid duplicates by id)
+  const backendIds = new Set((products ?? []).map((p) => p.id.toString()));
+  const staticToAdd = STATIC_PRODUCTS.filter(
+    (p) => !backendIds.has(p.id.toString()),
+  );
+  const allProducts = [...(products ?? []), ...staticToAdd, ...localProducts];
   const filtered = allProducts.filter(
     (p) => activeCategory === "all" || p.category === activeCategory,
   );

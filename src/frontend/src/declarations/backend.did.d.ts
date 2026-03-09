@@ -47,7 +47,7 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addProduct' : ActorMethod<[string, string, bigint, string, string], Product>,
   'adminLogin' : ActorMethod<
-    [string],
+    [string, string],
     { 'message' : string, 'success' : boolean }
   >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
@@ -69,6 +69,10 @@ export interface _SERVICE {
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'seedProducts' : ActorMethod<[], undefined>,
+  'updateOrderStatus' : ActorMethod<
+    [bigint, string],
+    { 'message' : string, 'success' : boolean }
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
