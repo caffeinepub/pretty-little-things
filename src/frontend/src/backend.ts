@@ -129,6 +129,7 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    addProduct(name: string, category: string, price: bigint, imageUrl: string, description: string): Promise<Product>;
     adminLogin(password: string): Promise<{
         message: string;
         success: boolean;
@@ -168,6 +169,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            return result;
+        }
+    }
+    async addProduct(arg0: string, arg1: string, arg2: bigint, arg3: string, arg4: string): Promise<Product> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addProduct(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }

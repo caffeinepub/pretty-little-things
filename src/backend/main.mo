@@ -11,7 +11,9 @@ import Runtime "mo:core/Runtime";
 import Blob "mo:core/Blob";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   // Initialize the access control system
   let accessControlState = AccessControl.initState();
@@ -75,18 +77,18 @@ actor {
   };
 
   // Databases
-  let products = Map.empty<Nat, Product>();
-  let orders = Map.empty<Nat, Order>();
-  let users = Map.empty<Nat, User>();
-  let usersByEmail = Map.empty<Text, User>();
-  let loginLogs = Map.empty<Nat, LoginLog>();
-  let userProfiles = Map.empty<Principal, UserProfile>();
+  stable var products = Map.empty<Nat, Product>();
+  stable var orders = Map.empty<Nat, Order>();
+  stable var users = Map.empty<Nat, User>();
+  stable var usersByEmail = Map.empty<Text, User>();
+  stable var loginLogs = Map.empty<Nat, LoginLog>();
+  stable var userProfiles = Map.empty<Principal, UserProfile>();
 
   // ID Counters
-  var nextProductId = 1;
-  var nextOrderId = 1;
-  var nextUserId = 1;
-  var nextLoginLogId = 1;
+  stable var nextProductId = 1;
+  stable var nextOrderId = 1;
+  stable var nextUserId = 1;
+  stable var nextLoginLogId = 1;
 
   // Admin password (hardcoded as per specification)
   let adminPassword = "admin123";
@@ -245,7 +247,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can seed products");
     };
-    
+
     if (products.size() == 0) {
       let initialProducts : [Product] = [
         // Korean Earrings
@@ -273,5 +275,24 @@ actor {
       initialProducts.forEach(func(product : Product) { products.add(product.id, product) });
       nextProductId := 17;
     };
+  };
+
+  public shared ({ caller }) func addProduct(name : Text, category : Text, price : Nat, imageUrl : Text, description : Text) : async Product {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add products");
+    };
+
+    let product : Product = {
+      id = nextProductId;
+      name;
+      category;
+      price;
+      imageUrl;
+      description;
+    };
+
+    products.add(nextProductId, product);
+    nextProductId += 1;
+    product;
   };
 };

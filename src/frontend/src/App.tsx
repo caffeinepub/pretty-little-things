@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { WishlistProvider } from "./contexts/WishlistContext";
 import { AdminLoginPage } from "./pages/AdminLoginPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CartPage } from "./pages/CartPage";
@@ -15,25 +16,28 @@ import { HomePage } from "./pages/HomePage";
 import { OrderConfirmationPage } from "./pages/OrderConfirmationPage";
 import { OrderPage } from "./pages/OrderPage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { WishlistPage } from "./pages/WishlistPage";
 
 // Root route
 const rootRoute = createRootRoute({
   component: () => (
     <AuthProvider>
       <CartProvider>
-        <Outlet />
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: "oklch(var(--card))",
-              border: "1px solid oklch(var(--pink-light))",
-              color: "oklch(var(--foreground))",
-              borderRadius: "1rem",
-              fontFamily: '"Outfit", sans-serif',
-            },
-          }}
-        />
+        <WishlistProvider>
+          <Outlet />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: "oklch(var(--card))",
+                border: "1px solid oklch(var(--pink-light))",
+                color: "oklch(var(--foreground))",
+                borderRadius: "1rem",
+                fontFamily: '"Outfit", sans-serif',
+              },
+            }}
+          />
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   ),
@@ -70,6 +74,12 @@ const orderConfirmationRoute = createRoute({
   component: OrderConfirmationPage,
 });
 
+const wishlistRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/wishlist",
+  component: WishlistPage,
+});
+
 const adminLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/login",
@@ -87,6 +97,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   productsRoute,
   cartRoute,
+  wishlistRoute,
   orderRoute,
   orderConfirmationRoute,
   adminLoginRoute,

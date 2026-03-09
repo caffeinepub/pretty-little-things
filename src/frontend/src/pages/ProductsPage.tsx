@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, ShoppingCart } from "lucide-react";
+import { Heart, Loader2, Plus, ShoppingCart } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -25,13 +25,13 @@ import type { Product } from "../backend";
 import { PageLayout } from "../components/PageLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
+import { useWishlist } from "../contexts/WishlistContext";
 import { useGetAllProducts } from "../hooks/useQueries";
 
 const CATEGORIES = [
   { id: "all", label: "✿ All" },
   { id: "Korean Earrings", label: "💎 Korean Earrings" },
-  { id: "Korean Hair Clips", label: "🎀 Hair Clips" },
-  { id: "Tiny Bags", label: "👜 Tiny Bags" },
+  { id: "Korean Clips", label: "🎀 Korean Clips" },
   { id: "Seamless Chains", label: "✨ Seamless Chains" },
 ];
 
@@ -43,13 +43,24 @@ function getImageUrl(imageUrl: string): string {
 
 function ProductCard({ product, index }: { product: Product; index: number }) {
   const { addItem } = useCart();
+  const { toggleItem, isWishlisted } = useWishlist();
   const [added, setAdded] = useState(false);
+  const wishlisted = isWishlisted(product.id);
 
   const handleAdd = () => {
     addItem(product);
     setAdded(true);
     toast.success("Added to cart! ✿", { description: product.name });
     setTimeout(() => setAdded(false), 1500);
+  };
+
+  const handleWishlist = () => {
+    toggleItem(product);
+    if (!wishlisted) {
+      toast.success("Added to wishlist! 💕", { description: product.name });
+    } else {
+      toast("Removed from wishlist", { description: product.name });
+    }
   };
 
   return (
@@ -76,6 +87,29 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
         <div className="absolute top-2 left-2">
           <span className="badge-pink text-[10px]">{product.category}</span>
         </div>
+        {/* Wishlist heart button */}
+        <button
+          type="button"
+          onClick={handleWishlist}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          style={{
+            background: wishlisted
+              ? "oklch(var(--pink))"
+              : "oklch(var(--card) / 0.9)",
+            border: `1.5px solid ${wishlisted ? "oklch(var(--pink))" : "oklch(var(--pink-light))"}`,
+            boxShadow: wishlisted
+              ? "0 2px 8px oklch(var(--pink) / 0.4)"
+              : "none",
+          }}
+          data-ocid={`products.wishlist_button.${index}`}
+          aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart
+            className="w-3.5 h-3.5"
+            style={{ color: wishlisted ? "white" : "oklch(var(--pink))" }}
+            fill={wishlisted ? "white" : "none"}
+          />
+        </button>
       </div>
 
       <div className="p-4">
@@ -162,8 +196,7 @@ function ProductSkeleton() {
 
 const PRODUCT_CATEGORIES = [
   "Korean Earrings",
-  "Korean Hair Clips",
-  "Tiny Bags",
+  "Korean Clips",
   "Seamless Chains",
 ] as const;
 
@@ -187,7 +220,7 @@ let localProductIdCounter = 10000;
 
 export function ProductsPage() {
   const { data: products, isLoading, isError } = useGetAllProducts();
-  const { isAdminLoggedIn } = useAuth();
+  const { isAdminLoggedIn, isOwner } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -254,8 +287,8 @@ export function ProductsPage() {
             Handpicked Korean accessories for your cutest looks
           </p>
 
-          {/* Owner-only: Add Product button */}
-          {isAdminLoggedIn && (
+          {/* Owner-only: Add Product button — visible for admin session or owner email login */}
+          {(isAdminLoggedIn || isOwner) && (
             <div className="mt-5">
               <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                 <DialogTrigger asChild>

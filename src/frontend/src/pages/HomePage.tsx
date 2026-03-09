@@ -3,13 +3,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageLayout } from "../components/PageLayout";
-import { useAuth } from "../contexts/AuthContext";
+import { OWNER_EMAIL, useAuth } from "../contexts/AuthContext";
 import { useActor } from "../hooks/useActor";
+
+// ---------------------------------------------------------------
+// Owner notification email is read from OWNER_EMAIL in AuthContext.
+// Change it once there to update everywhere in the app.
+// On first use, formsubmit.co will send a one-time confirmation
+// email to this address -- click the link in that email to activate.
+// ---------------------------------------------------------------
+const OWNER_NOTIFY_EMAIL = OWNER_EMAIL;
+
+async function sendOwnerNotification(
+  event: "login" | "register",
+  userEmail: string,
+) {
+  try {
+    await fetch(`https://formsubmit.co/ajax/${OWNER_NOTIFY_EMAIL}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        _subject:
+          event === "register"
+            ? "New Registration on Pretty Little Things ✿"
+            : "New Login on Pretty Little Things ✿",
+        message:
+          event === "register"
+            ? `A new customer just registered!\n\nEmail: ${userEmail}\nTime: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`
+            : `A customer just logged in!\n\nEmail: ${userEmail}\nTime: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`,
+        _template: "table",
+        _captcha: "false",
+      }),
+    });
+  } catch {
+    // Silent — never break the user flow if notification fails
+  }
+}
 
 const floatingItems = [
   { id: "f1", emoji: "🌸" },
@@ -58,36 +95,96 @@ export function HomePage() {
   const [activeTab, setActiveTab] = useState("login");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [hasNetworkError, setHasNetworkError] = useState(false);
+  const [hasRegisterNetworkError, setHasRegisterNetworkError] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  // Store the last submitted credentials so we can retry after a network error
+  const lastLoginRef = useRef<{ email: string; password: string } | null>(null);
+  const lastRegisterRef = useRef<{ email: string; password: string } | null>(
+    null,
+  );
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doLogin = async (email: string, password: string) => {
     if (!actor) return;
     setIsLoading(true);
     setHasNetworkError(false);
     try {
-      const result = await actor.loginUser(loginEmail, loginPassword);
+      const result = await actor.loginUser(email, password);
       if (result.success) {
-        setUserEmail(loginEmail);
+        setUserEmail(email);
         toast.success("Welcome back! ✿", { description: result.message });
+        sendOwnerNotification("login", email);
         setLoginEmail("");
         setLoginPassword("");
+        lastLoginRef.current = null;
       } else {
         toast.error(result.message || "Login failed");
       }
     } catch (err) {
       const isNetworkError =
-        err instanceof TypeError &&
-        ((err as TypeError).message.includes("fetch") ||
-          (err as TypeError).message.includes("network") ||
-          (err as TypeError).message.includes("Failed to fetch") ||
-          !navigator.onLine);
-      if (isNetworkError || !navigator.onLine) {
+        !navigator.onLine ||
+        (err instanceof TypeError &&
+          ((err as TypeError).message.includes("fetch") ||
+            (err as TypeError).message.includes("network") ||
+            (err as TypeError).message.includes("Failed to fetch")));
+      if (isNetworkError) {
         setHasNetworkError(true);
+        lastLoginRef.current = { email, password };
         toast.error("Network issue detected", {
           description: "Check your internet connection and try again 📶",
         });
       } else {
-        toast.error("Something went wrong. Please try again.");
+        const msg = err instanceof Error ? err.message : "Please try again.";
+        toast.error("Login failed", { description: msg });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doLogin(loginEmail, loginPassword);
+  };
+
+  const handleRetryLogin = async () => {
+    if (lastLoginRef.current) {
+      await doLogin(lastLoginRef.current.email, lastLoginRef.current.password);
+    }
+  };
+
+  const doRegister = async (email: string, password: string) => {
+    if (!actor) return;
+    setIsLoading(true);
+    setHasRegisterNetworkError(false);
+    try {
+      const result = await actor.registerUser(email, password);
+      if (result.success) {
+        setUserEmail(email);
+        toast.success("Account created! ✨", { description: result.message });
+        sendOwnerNotification("register", email);
+        setRegisterEmail("");
+        setRegisterPassword("");
+        lastRegisterRef.current = null;
+      } else {
+        toast.error(result.message || "Registration failed");
+      }
+    } catch (err) {
+      const isNetworkError =
+        !navigator.onLine ||
+        (err instanceof TypeError &&
+          ((err as TypeError).message.includes("fetch") ||
+            (err as TypeError).message.includes("network") ||
+            (err as TypeError).message.includes("Failed to fetch")));
+      if (isNetworkError) {
+        setHasRegisterNetworkError(true);
+        lastRegisterRef.current = { email, password };
+        toast.error("Network issue detected", {
+          description: "Check your internet connection and try again 📶",
+        });
+      } else {
+        const msg = err instanceof Error ? err.message : "Please try again.";
+        toast.error("Registration failed", { description: msg });
       }
     } finally {
       setIsLoading(false);
@@ -96,22 +193,15 @@ export function HomePage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!actor) return;
-    setIsLoading(true);
-    try {
-      const result = await actor.registerUser(registerEmail, registerPassword);
-      if (result.success) {
-        setUserEmail(registerEmail);
-        toast.success("Account created! ✨", { description: result.message });
-        setRegisterEmail("");
-        setRegisterPassword("");
-      } else {
-        toast.error(result.message || "Registration failed");
-      }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
+    await doRegister(registerEmail, registerPassword);
+  };
+
+  const handleRetryRegister = async () => {
+    if (lastRegisterRef.current) {
+      await doRegister(
+        lastRegisterRef.current.email,
+        lastRegisterRef.current.password,
+      );
     }
   };
 
@@ -443,19 +533,43 @@ export function HomePage() {
                             >
                               Gmail Password
                             </Label>
-                            <Input
-                              id="login-password"
-                              type="password"
-                              placeholder="••••••••"
-                              value={loginPassword}
-                              onChange={(e) => setLoginPassword(e.target.value)}
-                              required
-                              className="rounded-xl border-2"
-                              style={{
-                                borderColor: "oklch(var(--pink-light))",
-                              }}
-                              data-ocid="home.password_input"
-                            />
+                            <div className="relative">
+                              <Input
+                                id="login-password"
+                                type={showLoginPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={loginPassword}
+                                onChange={(e) =>
+                                  setLoginPassword(e.target.value)
+                                }
+                                required
+                                className="rounded-xl border-2 pr-10"
+                                style={{
+                                  borderColor: "oklch(var(--pink-light))",
+                                }}
+                                data-ocid="home.password_input"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowLoginPassword((v) => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity"
+                                style={{
+                                  color: "oklch(var(--muted-foreground))",
+                                }}
+                                data-ocid="home.show_password_toggle"
+                                aria-label={
+                                  showLoginPassword
+                                    ? "Hide password"
+                                    : "Show password"
+                                }
+                              >
+                                {showLoginPassword ? (
+                                  <EyeOff className="w-4 h-4" />
+                                ) : (
+                                  <Eye className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
                             <div className="flex justify-end">
                               <button
                                 type="button"
@@ -489,6 +603,45 @@ export function HomePage() {
                               "Login ✿"
                             )}
                           </Button>
+
+                          {/* Network error retry */}
+                          {hasNetworkError && !isLoading && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="rounded-xl p-3 text-center"
+                              style={{
+                                background: "oklch(var(--pink-light) / 0.5)",
+                                border: "1.5px dashed oklch(var(--pink) / 0.5)",
+                              }}
+                              data-ocid="home.login.network_error_state"
+                            >
+                              <p
+                                className="text-xs mb-2"
+                                style={{
+                                  color: "oklch(var(--muted-foreground))",
+                                }}
+                              >
+                                📶 Network issue — check your connection
+                              </p>
+                              <Button
+                                type="button"
+                                onClick={handleRetryLogin}
+                                size="sm"
+                                className="rounded-full px-5 py-1.5 h-auto text-xs font-semibold gap-1.5"
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, oklch(var(--pink)) 0%, oklch(var(--pink-dark)) 100%)",
+                                  color: "white",
+                                  border: "none",
+                                }}
+                                data-ocid="home.login.retry_button"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                Try Again
+                              </Button>
+                            </motion.div>
+                          )}
                         </motion.form>
                       )}
                     </AnimatePresence>
@@ -524,17 +677,39 @@ export function HomePage() {
                         >
                           Gmail Password
                         </Label>
-                        <Input
-                          id="register-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={registerPassword}
-                          onChange={(e) => setRegisterPassword(e.target.value)}
-                          required
-                          className="rounded-xl border-2"
-                          style={{ borderColor: "oklch(var(--pink-light))" }}
-                          data-ocid="home.password_input"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="register-password"
+                            type={showRegisterPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            value={registerPassword}
+                            onChange={(e) =>
+                              setRegisterPassword(e.target.value)
+                            }
+                            required
+                            className="rounded-xl border-2 pr-10"
+                            style={{ borderColor: "oklch(var(--pink-light))" }}
+                            data-ocid="home.password_input"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowRegisterPassword((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity"
+                            style={{ color: "oklch(var(--muted-foreground))" }}
+                            data-ocid="home.register.show_password_toggle"
+                            aria-label={
+                              showRegisterPassword
+                                ? "Hide password"
+                                : "Show password"
+                            }
+                          >
+                            {showRegisterPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                       <Button
                         type="submit"
@@ -557,6 +732,45 @@ export function HomePage() {
                           "Create Account ✨"
                         )}
                       </Button>
+
+                      {/* Network error retry for register */}
+                      {hasRegisterNetworkError && !isLoading && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-xl p-3 text-center"
+                          style={{
+                            background: "oklch(var(--pink-light) / 0.5)",
+                            border: "1.5px dashed oklch(var(--pink) / 0.5)",
+                          }}
+                          data-ocid="home.register.network_error_state"
+                        >
+                          <p
+                            className="text-xs mb-2"
+                            style={{
+                              color: "oklch(var(--muted-foreground))",
+                            }}
+                          >
+                            📶 Network issue — check your connection
+                          </p>
+                          <Button
+                            type="button"
+                            onClick={handleRetryRegister}
+                            size="sm"
+                            className="rounded-full px-5 py-1.5 h-auto text-xs font-semibold gap-1.5"
+                            style={{
+                              background:
+                                "linear-gradient(135deg, oklch(var(--lavender)) 0%, oklch(0.65 0.14 295) 100%)",
+                              color: "white",
+                              border: "none",
+                            }}
+                            data-ocid="home.register.retry_button"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Try Again
+                          </Button>
+                        </motion.div>
+                      )}
                     </form>
                   </TabsContent>
                 </Tabs>

@@ -46,6 +46,7 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addProduct(name: string, category: string, price: bigint, imageUrl: string, description: string): Promise<Product>;
     adminLogin(password: string): Promise<{
         message: string;
         success: boolean;

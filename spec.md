@@ -1,33 +1,19 @@
 # Pretty Little Things
 
 ## Current State
-- Full-stack accessories shop with Home (login/register), Products, Cart, Order, Confirmation, and Admin pages.
-- Auth uses email/password stored in the backend. AuthContext holds userEmail and isAdminLoggedIn.
-- Products page shows all products in a grid with category filters; no admin-only controls.
-- Login has basic error handling with a generic catch toast.
-- No social sharing feature exists.
-- Email feature is disabled (paid only) -- real email notifications cannot be sent.
+A kawaii accessories shop with user login/register (email + custom password stored in backend), products page, cart, wishlist, order (COD, Salem only), admin panel, and owner-only product adding. Login/register currently uses non-stable in-memory Maps, so all user accounts are lost every time the backend is redeployed.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Share button**: A "Share" button (using Web Share API with fallback to clipboard copy) on the site -- placed in the Navigation bar or as a floating button. Shares the shop URL and name.
-- **Network error handling on login**: Detect network/fetch errors specifically during login and show a distinct "Network issue -- check your connection and try again" toast instead of the generic error.
-- **Owner-only Add Product button on Products page**: An "Add Product" button visible only when the admin (owner) is logged in (isAdminLoggedIn === true). Opens a modal/form to add a new product. Uses the existing backend product data model.
+- Stable storage for all Maps and counters so user accounts, orders, products, and login logs persist across redeploys/upgrades
 
 ### Modify
-- **Login error handling**: Wrap the login catch block to check for network errors (TypeError / "Failed to fetch") and show a specific network error message.
-- **Products page**: Import useAuth, check isAdminLoggedIn, show "Add Product" button in the header area only for owner.
-- **Navigation**: Add a Share button/icon to the nav bar.
+- All `let` Maps and `var` counters in the backend become `stable` so they survive upgrades
 
 ### Remove
-- Nothing removed.
+- Nothing
 
 ## Implementation Plan
-1. Update `HomePage.tsx` login catch block to detect network errors and show a tailored toast.
-2. Update `ProductsPage.tsx`:
-   - Import useAuth
-   - Show "Add Product" button only when isAdminLoggedIn is true
-   - Add a modal form (name, description, price, category, imageUrl) that calls a backend addProduct endpoint if available, or stores locally
-3. Update `Navigation.tsx` (or a suitable location) to add a Share button using the Web Share API; fallback to copying the URL to clipboard with a toast confirmation.
-4. Note in the UI (admin panel or register success toast) that login/register notifications are tracked in the Admin panel (real email is a paid feature -- not available here).
+1. Regenerate backend Motoko with all Maps and counters declared as `stable`
+2. Keep all existing types, functions, and logic identical -- only the storage persistence changes

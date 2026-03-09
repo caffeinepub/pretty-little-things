@@ -1,11 +1,20 @@
 import type React from "react";
 import { createContext, useContext, useState } from "react";
 
+// ---------------------------------------------------------------
+// OWNER EMAIL: Change this to your actual Gmail address.
+// This email will:
+//   1. Receive login & registration alerts via formsubmit.co
+//   2. Get access to the "Add Product" button on the Products page
+// ---------------------------------------------------------------
+export const OWNER_EMAIL = "prettylittlethings.owner@gmail.com";
+
 interface AuthContextValue {
   userEmail: string | null;
   setUserEmail: (email: string | null) => void;
   isAdminLoggedIn: boolean;
   setAdminLoggedIn: (val: boolean) => void;
+  isOwner: boolean;
   logout: () => void;
 }
 
@@ -45,6 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAdminLoggedIn(false);
   };
 
+  // True when the logged-in user's email matches the owner email
+  const isOwner =
+    !!userEmail &&
+    userEmail.trim().toLowerCase() === OWNER_EMAIL.trim().toLowerCase();
+
   return (
     <AuthContext.Provider
       value={{
@@ -52,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserEmail,
         isAdminLoggedIn,
         setAdminLoggedIn,
+        isOwner,
         logout,
       }}
     >
