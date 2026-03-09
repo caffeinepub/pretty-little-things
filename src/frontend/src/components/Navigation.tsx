@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, ShoppingCart, User } from "lucide-react";
+import { LogOut, Share2, ShoppingCart, User } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 
@@ -13,6 +14,28 @@ export function Navigation() {
   const handleLogout = () => {
     logout();
     navigate({ to: "/" });
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: "Pretty Little Things",
+      text: "Adorable Korean accessories ✨",
+      url: window.location.origin,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // user cancelled share — no action needed
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.origin);
+        toast.success("Link copied! Share it with your friends 💕");
+      } catch {
+        toast.error("Could not copy link. Try manually copying the URL.");
+      }
+    }
   };
 
   return (
@@ -97,6 +120,23 @@ export function Navigation() {
 
           {/* Auth section */}
           <div className="flex items-center gap-3">
+            {/* Share button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              className="rounded-full text-xs gap-1.5 px-3 py-1.5 h-auto transition-all hover:opacity-80"
+              style={{
+                background: "oklch(var(--pink-light))",
+                color: "oklch(var(--pink-dark))",
+                border: "1px solid oklch(var(--pink) / 0.3)",
+              }}
+              data-ocid="nav.share_button"
+              title="Share Pretty Little Things"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
             {userEmail ? (
               <div className="flex items-center gap-2">
                 <div

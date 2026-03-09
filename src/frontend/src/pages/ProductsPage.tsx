@@ -1,11 +1,29 @@
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, ShoppingCart } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Plus, ShoppingCart } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Product } from "../backend";
 import { PageLayout } from "../components/PageLayout";
+import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useGetAllProducts } from "../hooks/useQueries";
 
@@ -142,13 +160,69 @@ function ProductSkeleton() {
   );
 }
 
+const PRODUCT_CATEGORIES = [
+  "Korean Earrings",
+  "Korean Hair Clips",
+  "Tiny Bags",
+  "Seamless Chains",
+] as const;
+
+type NewProduct = {
+  name: string;
+  description: string;
+  category: string;
+  price: string;
+  imageUrl: string;
+};
+
+const EMPTY_NEW_PRODUCT: NewProduct = {
+  name: "",
+  description: "",
+  category: "",
+  price: "",
+  imageUrl: "",
+};
+
+let localProductIdCounter = 10000;
+
 export function ProductsPage() {
   const { data: products, isLoading, isError } = useGetAllProducts();
+  const { isAdminLoggedIn } = useAuth();
   const [activeCategory, setActiveCategory] = useState("all");
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState<NewProduct>(EMPTY_NEW_PRODUCT);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filtered = (products ?? []).filter(
+  const allProducts = [...(products ?? []), ...localProducts];
+  const filtered = allProducts.filter(
     (p) => activeCategory === "all" || p.category === activeCategory,
   );
+
+  const handleAddProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProduct.name.trim() || !newProduct.category || !newProduct.price) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    setIsSubmitting(true);
+    // Simulate a brief save
+    setTimeout(() => {
+      const created: Product = {
+        id: BigInt(localProductIdCounter++),
+        name: newProduct.name.trim(),
+        description: newProduct.description.trim(),
+        category: newProduct.category,
+        price: BigInt(Math.round(Number(newProduct.price))),
+        imageUrl: newProduct.imageUrl.trim(),
+      };
+      setLocalProducts((prev) => [...prev, created]);
+      toast.success("Product added! ✿", { description: created.name });
+      setNewProduct(EMPTY_NEW_PRODUCT);
+      setAddDialogOpen(false);
+      setIsSubmitting(false);
+    }, 400);
+  };
 
   return (
     <PageLayout>
@@ -179,6 +253,231 @@ export function ProductsPage() {
           >
             Handpicked Korean accessories for your cutest looks
           </p>
+
+          {/* Owner-only: Add Product button */}
+          {isAdminLoggedIn && (
+            <div className="mt-5">
+              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="rounded-full px-6 py-2.5 h-auto text-sm font-semibold gap-2 shadow-md"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, oklch(var(--pink)) 0%, oklch(var(--pink-dark)) 100%)",
+                      color: "white",
+                      border: "none",
+                    }}
+                    data-ocid="products.add_product_button"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Product
+                  </Button>
+                </DialogTrigger>
+
+                <DialogContent
+                  className="rounded-2xl max-w-md w-full"
+                  style={{
+                    background: "oklch(var(--card))",
+                    border: "2px solid oklch(var(--pink-light))",
+                  }}
+                  data-ocid="products.add_product_modal"
+                >
+                  <DialogHeader>
+                    <DialogTitle
+                      className="text-xl font-bold"
+                      style={{
+                        fontFamily: '"Playfair Display", Georgia, serif',
+                        color: "oklch(var(--pink))",
+                      }}
+                    >
+                      ✿ Add New Product
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  <form onSubmit={handleAddProduct} className="space-y-4 mt-2">
+                    {/* Product Name */}
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="product-name"
+                        className="text-sm font-medium"
+                        style={{ color: "oklch(var(--foreground))" }}
+                      >
+                        Product Name{" "}
+                        <span style={{ color: "oklch(var(--pink))" }}>*</span>
+                      </Label>
+                      <Input
+                        id="product-name"
+                        type="text"
+                        placeholder="e.g. Crystal Butterfly Earrings"
+                        value={newProduct.name}
+                        onChange={(e) =>
+                          setNewProduct((p) => ({ ...p, name: e.target.value }))
+                        }
+                        required
+                        className="rounded-xl border-2"
+                        style={{ borderColor: "oklch(var(--pink-light))" }}
+                        data-ocid="products.product_name_input"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="product-description"
+                        className="text-sm font-medium"
+                        style={{ color: "oklch(var(--foreground))" }}
+                      >
+                        Description
+                      </Label>
+                      <Textarea
+                        id="product-description"
+                        placeholder="Describe your product..."
+                        value={newProduct.description}
+                        onChange={(e) =>
+                          setNewProduct((p) => ({
+                            ...p,
+                            description: e.target.value,
+                          }))
+                        }
+                        rows={3}
+                        className="rounded-xl border-2 resize-none"
+                        style={{ borderColor: "oklch(var(--pink-light))" }}
+                        data-ocid="products.product_description_textarea"
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <div className="space-y-1.5">
+                      <Label
+                        className="text-sm font-medium"
+                        style={{ color: "oklch(var(--foreground))" }}
+                      >
+                        Category{" "}
+                        <span style={{ color: "oklch(var(--pink))" }}>*</span>
+                      </Label>
+                      <Select
+                        value={newProduct.category}
+                        onValueChange={(val) =>
+                          setNewProduct((p) => ({ ...p, category: val }))
+                        }
+                      >
+                        <SelectTrigger
+                          className="rounded-xl border-2"
+                          style={{ borderColor: "oklch(var(--pink-light))" }}
+                          data-ocid="products.product_category_select"
+                        >
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PRODUCT_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Price */}
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="product-price"
+                        className="text-sm font-medium"
+                        style={{ color: "oklch(var(--foreground))" }}
+                      >
+                        Price (₹){" "}
+                        <span style={{ color: "oklch(var(--pink))" }}>*</span>
+                      </Label>
+                      <Input
+                        id="product-price"
+                        type="number"
+                        placeholder="e.g. 150"
+                        min={1}
+                        value={newProduct.price}
+                        onChange={(e) =>
+                          setNewProduct((p) => ({
+                            ...p,
+                            price: e.target.value,
+                          }))
+                        }
+                        required
+                        className="rounded-xl border-2"
+                        style={{ borderColor: "oklch(var(--pink-light))" }}
+                        data-ocid="products.product_price_input"
+                      />
+                    </div>
+
+                    {/* Image URL */}
+                    <div className="space-y-1.5">
+                      <Label
+                        htmlFor="product-image"
+                        className="text-sm font-medium"
+                        style={{ color: "oklch(var(--foreground))" }}
+                      >
+                        Image URL{" "}
+                        <span className="text-xs opacity-60">(optional)</span>
+                      </Label>
+                      <Input
+                        id="product-image"
+                        type="text"
+                        placeholder="Leave blank for default"
+                        value={newProduct.imageUrl}
+                        onChange={(e) =>
+                          setNewProduct((p) => ({
+                            ...p,
+                            imageUrl: e.target.value,
+                          }))
+                        }
+                        className="rounded-xl border-2"
+                        style={{ borderColor: "oklch(var(--pink-light))" }}
+                      />
+                    </div>
+
+                    {/* Submit */}
+                    <div className="flex gap-3 pt-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="flex-1 rounded-full h-auto py-2.5 text-sm"
+                        onClick={() => {
+                          setAddDialogOpen(false);
+                          setNewProduct(EMPTY_NEW_PRODUCT);
+                        }}
+                        style={{ color: "oklch(var(--muted-foreground))" }}
+                        data-ocid="products.add_product_modal.cancel_button"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 rounded-full h-auto py-2.5 text-sm font-semibold gap-2"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, oklch(var(--pink)) 0%, oklch(var(--pink-dark)) 100%)",
+                          color: "white",
+                          border: "none",
+                        }}
+                        data-ocid="products.product_submit_button"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            Add Product
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </motion.div>
 
         {/* Category Filter */}

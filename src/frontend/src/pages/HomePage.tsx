@@ -57,11 +57,13 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [hasNetworkError, setHasNetworkError] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!actor) return;
     setIsLoading(true);
+    setHasNetworkError(false);
     try {
       const result = await actor.loginUser(loginEmail, loginPassword);
       if (result.success) {
@@ -72,8 +74,21 @@ export function HomePage() {
       } else {
         toast.error(result.message || "Login failed");
       }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err) {
+      const isNetworkError =
+        err instanceof TypeError &&
+        ((err as TypeError).message.includes("fetch") ||
+          (err as TypeError).message.includes("network") ||
+          (err as TypeError).message.includes("Failed to fetch") ||
+          !navigator.onLine);
+      if (isNetworkError || !navigator.onLine) {
+        setHasNetworkError(true);
+        toast.error("Network issue detected", {
+          description: "Check your internet connection and try again 📶",
+        });
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -224,6 +239,18 @@ export function HomePage() {
           </motion.div>
         </motion.div>
       </section>
+
+      {/* Network error state indicator (hidden visually, used for test targeting) */}
+      <div
+        data-ocid="home.network_error_state"
+        aria-live="polite"
+        className="sr-only"
+        aria-hidden={!hasNetworkError}
+      >
+        {hasNetworkError
+          ? "Network issue detected. Check your internet connection."
+          : ""}
+      </div>
 
       {/* Auth Card Section */}
       <section className="pb-20 px-4">
